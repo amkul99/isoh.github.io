@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>SQL Editor with Beautify & Options</title>
+    <link
+            rel="stylesheet"
+            href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <style>
+        #sqlEditor {
+            height: 250px;
+            width: 100%;
+            border: 1px solid #ccc;
+            font-family: monospace;
+        }
+        #sqlPreview {
+            display: none;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+<div class="container">
+    <div class="form-group">
+        <label class="form-label d-flex justify-content-between align-items-center">
+            SQL Editor
+            <div>
+                <button class="btn btn-sm btn-outline-primary mr-1" onclick="beautifySql()">Beautify</button>
+                <button class="btn btn-sm btn-outline-warning mr-1" onclick="beautifySql(true)">Single-Line</button>
+                <button class="btn btn-sm btn-outline-dark mr-1" onclick="togglePreview()">Preview</button>
+                <button class="btn btn-sm btn-outline-success mr-1" onclick="copySql()">Copy</button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleTheme()">Theme</button>
+            </div>
+        </label>
+
+        <div id="sqlEditor" class="mb-2">SELECT id, name, age FROM users WHERE age > 18 ORDER BY name;</div>
+        <pre id="sqlPreview" class="form-control bg-light"></pre>
+        <span id="sqlStatus" class="text-muted small">Ready</span>
+    </div>
+</div>
+
+<!-- Ace Editor CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.9.6/ace.js"></script>
+<script>
+    const editor = ace.edit("sqlEditor");
+    editor.setTheme("ace/theme/sqlserver");
+    editor.session.setMode("ace/mode/sql");
+    editor.setShowPrintMargin(false);
+    editor.session.setUseWrapMode(true);
+
+    let darkMode = false;
+    let previewMode = false;
+
+    function beautifySql(singleLine = false) {
+        const sql = editor.getValue().trim();
+        const keywords = [
+            "SELECT", "FROM", "WHERE", "ORDER BY", "GROUP BY", "JOIN", "LEFT JOIN",
+            "RIGHT JOIN", "INNER JOIN", "AND", "OR", "LIMIT", "OFFSET"
+        ];
+
+        let formatted = sql;
+
+        if (singleLine) {
+            formatted = formatted.replace(/\s+/g, ' ').trim();
+            document.getElementById("sqlStatus").textContent = "Beautified (Single Line)";
+        } else {
+            // Split SELECT into lines per column
+            formatted = formatted.replace(/\bSELECT\b/i, "\nSELECT");
+            formatted = formatted.replace(/SELECT\s+(.*)\s+FROM/i, (_, cols) => {
+                return (
+                    "SELECT\n  " +
+                    cols
+                        .split(",")
+                        .map(c => c.trim())
+                        .join(",\n  ") +
+                    "\nFROM"
+                );
+            });
+
+            // Other keywords into new lines
+            keywords.forEach(kw => {
+                const regex = new RegExp(`\\b${kw}\\b`, "gi");
+                formatted = formatted.replace(regex, `\n${kw}`);
+            });
+
+            formatted = formatted.replace(/\n+/g, '\n').trim(); // Clean extra newlines
+            document.getElementById("sqlStatus").textContent = "Beautified ✓";
+        }
+
+        editor.setValue(formatted, 1);
+        if (previewMode) {
+            document.getElementById("sqlPreview").textContent = formatted;
+        }
+    }
+
+    function togglePreview() {
+        previewMode = !previewMode;
+        const preview = document.getElementById("sqlPreview");
+        const editorDiv = document.getElementById("sqlEditor");
+        if (previewMode) {
+            preview.textContent = editor.getValue();
+            preview.style.display = 'block';
+            editorDiv.style.display = 'none';
+        } else {
+            preview.style.display = 'none';
+            editorDiv.style.display = 'block';
+        }
+    }
+
+    function copySql() {
+        const text = previewMode ? document.getElementById("sqlPreview").textContent : editor.getValue();
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+        document.getElementById("sqlStatus").textContent = "Copied to clipboard!";
+    }
+
+    function toggleTheme() {
+        darkMode = !darkMode;
+        editor.setTheme(darkMode ? "ace/theme/monokai" : "ace/theme/sqlserver");
+    }
+</script>
+</body>
+</html>

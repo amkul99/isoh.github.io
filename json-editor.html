@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON Editor Preview</title>
+  <!-- Bootstrap 4 CSS -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+</head>
+<body class="p-4">
+
+  <div class="container">
+    <!-- Your JSON Editor Code Goes Here -->
+    <div class="form-group">
+      <label class="form-label d-flex justify-content-between align-items-center">
+        JSON Editor
+        <div>
+          <button type="button" class="btn btn-sm btn-outline-primary mr-1" onclick="beautifyJson()">Beautify</button>
+          <button type="button" class="btn btn-sm btn-outline-secondary mr-1" data-toggle="collapse" data-target="#jsonEditorCollapse" aria-expanded="true">
+            Toggle
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-dark mr-1" onclick="togglePreview()">Preview</button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="copyJson()">Copy</button>
+        </div>
+      </label>
+
+      <div id="jsonEditorCollapse" class="collapse show">
+        <textarea
+          id="jsonData"
+          name="jsonData"
+          rows="10"
+          class="form-control mb-2"
+          style="font-family: monospace;"
+          placeholder="{ }"
+        >{
+  "example": "value"
+}</textarea>
+
+        <pre id="jsonPreview" class="form-control bg-light" style="display: none; font-family: monospace; height: auto;"></pre>
+        <span id="jsonValidationMessage" class="text-muted small">Valid JSON</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 4 JS dependencies -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    const textarea = document.getElementById('jsonData');
+    const validationMessage = document.getElementById('jsonValidationMessage');
+    const previewBox = document.getElementById('jsonPreview');
+    let previewMode = false;
+
+    textarea.addEventListener('input', validateJson);
+
+    function validateJson() {
+      try {
+        JSON.parse(textarea.value);
+        validationMessage.textContent = 'Valid JSON';
+        validationMessage.className = 'text-success small';
+      } catch (e) {
+        validationMessage.textContent = 'Invalid JSON';
+        validationMessage.className = 'text-danger small';
+      }
+    }
+
+    function beautifyJson() {
+      try {
+        const parsed = JSON.parse(textarea.value);
+        const formatted = JSON.stringify(parsed, null, 2);
+        textarea.value = formatted;
+        validationMessage.textContent = 'Beautified ✓';
+        validationMessage.className = 'text-success small';
+        if (previewMode) previewBox.textContent = formatted;
+      } catch (e) {
+        validationMessage.textContent = 'Cannot beautify: Invalid JSON';
+        validationMessage.className = 'text-danger small';
+      }
+    }
+
+    function togglePreview() {
+      previewMode = !previewMode;
+      if (previewMode) {
+        try {
+          previewBox.textContent = JSON.stringify(JSON.parse(textarea.value), null, 2);
+        } catch {
+          previewBox.textContent = 'Invalid JSON';
+        }
+        textarea.style.display = 'none';
+        previewBox.style.display = 'block';
+      } else {
+        textarea.style.display = 'block';
+        previewBox.style.display = 'none';
+      }
+    }
+
+    function copyJson() {
+      const textToCopy = previewMode ? previewBox.textContent : textarea.value;
+      const tempInput = document.createElement("textarea");
+      tempInput.value = textToCopy;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand("copy");
+      document.body.removeChild(tempInput);
+
+      validationMessage.textContent = 'Copied to clipboard!';
+      validationMessage.className = 'text-info small';
+    }
+
+    validateJson();
+  </script>
+</body>
+</html>
